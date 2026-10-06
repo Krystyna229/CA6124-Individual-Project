@@ -26,6 +26,9 @@ def RecommenderModel(algo_name: str) -> GeneralRecommender:
     elif algo_name == 'multi-vae':
         from .VAECFRecommender import VAECF
         return VAECF
+    elif algo_name == 'cdae':
+        from .CDAERecommender import CDAE
+        return CDAE
     elif algo_name == 'neumf':
         from .NeuMFRecommender import NeuMF
         return NeuMF
@@ -50,4 +53,3 @@ def RecommenderModel(algo_name: str) -> GeneralRecommender:
 
 
     
-

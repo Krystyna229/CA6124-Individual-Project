@@ -170,3 +170,12 @@ log/
 
 #VSCode config files
 .vscode/
+
+# The full Amazon 2014 file is downloaded from the official UCSD page.
+# It exceeds GitHub's browser-upload limit; keep only reproducible diagnostics.
+data/amazon-music/ratings_Digital_Music.csv
+
+# Local report-rendering previews and temporary office files.
+report/preview/
+report/rendered/.~lock*
+report/rendered/*.tmp

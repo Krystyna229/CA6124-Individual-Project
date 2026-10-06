@@ -155,7 +155,9 @@ def MAP(test_ur, pred_ur, test_u):
 
 def NDCG(test_ur, pred_ur, test_u):
     def DCG(r):
-        r = np.asfarray(r) != 0
+        # np.asfarray was removed in NumPy 2.0; this is equivalent and works
+        # with both NumPy 1.x and 2.x.
+        r = np.asarray(r, dtype=float) != 0
         if r.size:
             dcg = np.sum(np.subtract(np.power(2, r), 1) /
                          np.log2(np.arange(2, r.size + 2)))

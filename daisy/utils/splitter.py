@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import KFold
 
 class TestSplitter(object):
@@ -7,9 +8,12 @@ class TestSplitter(object):
         self.test_size = config['test_size']
         self.uid = config['UID_NAME']
         self.tid = config['TID_NAME']
+        self.split_boundary = config.get('split_boundary', 'interaction')
 
     def split(self, df):
-        train_index, test_index = split_test(df, self.test_method, self.test_size, self.uid, self.tid)
+        train_index, test_index = split_test(
+            df, self.test_method, self.test_size, self.uid, self.tid,
+            self.split_boundary)
 
         return train_index, test_index
 
@@ -20,13 +24,35 @@ class ValidationSplitter(object):
         self.val_size = config['val_size']
         self.uid = config['UID_NAME']
         self.tid = config['TID_NAME']
+        self.split_boundary = config.get('split_boundary', 'interaction')
 
     def split(self, df):
-        train_val_index_zip = split_validation(df, self.val_method, self.fold_num, self.val_size, self.uid, self.tid)
+        train_val_index_zip = split_validation(
+            df, self.val_method, self.fold_num, self.val_size, self.uid,
+            self.tid, self.split_boundary)
 
         return train_val_index_zip
 
-def split_test(df, test_method='rsbr', test_size=.2, uid='user', tid='timestamp'):
+def _day_grouped_split(df, holdout_size, tid):
+    """Choose the closest split between complete calendar days."""
+    timestamps = df[tid]
+    if np.issubdtype(timestamps.dtype, np.number):
+        days = (timestamps.astype(np.int64) // 86400).to_numpy()
+    else:
+        days = pd.to_datetime(timestamps, utc=True).dt.floor('D').to_numpy()
+
+    _, day_counts = np.unique(days, return_counts=True)
+    cumulative = np.cumsum(day_counts)
+    target = len(df) * (1 - holdout_size)
+    valid = cumulative[:-1]
+    if len(valid) == 0:
+        raise ValueError('Day-boundary split requires at least two distinct days')
+    split_idx = int(valid[np.argmin(np.abs(valid - target))])
+    return np.arange(split_idx), np.arange(split_idx, len(df))
+
+
+def split_test(df, test_method='rsbr', test_size=.2, uid='user',
+               tid='timestamp', split_boundary='interaction'):
     """
     method of splitting data into training data and test data
     Parameters
@@ -68,8 +94,11 @@ def split_test(df, test_method='rsbr', test_size=.2, uid='user', tid='timestamp'
         train_ids = np.setdiff1d(df.index.values, test_ids)
 
     elif test_method == 'tsbr':
-        split_idx = int(np.ceil(len(df) * (1 - test_size)))
-        train_ids, test_ids = np.arange(split_idx), np.arange(split_idx, len(df))
+        if split_boundary == 'day':
+            train_ids, test_ids = _day_grouped_split(df, test_size, tid)
+        else:
+            split_idx = int(np.ceil(len(df) * (1 - test_size)))
+            train_ids, test_ids = np.arange(split_idx), np.arange(split_idx, len(df))
 
     elif test_method == 'rsbr':
         # train_set, test_set = train_test_split(df, test_size=test_size, random_state=2019)
@@ -91,7 +120,9 @@ def split_test(df, test_method='rsbr', test_size=.2, uid='user', tid='timestamp'
     return train_ids, test_ids
 
 
-def split_validation(train_set, val_method='rsbr', fold_num=1, val_size=.1, uid='user', tid='timestamp'):
+def split_validation(train_set, val_method='rsbr', fold_num=1,
+                     val_size=.1, uid='user', tid='timestamp',
+                     split_boundary='interaction'):
     """
     method of split data into training data and validation data.
 
@@ -158,8 +189,12 @@ def split_validation(train_set, val_method='rsbr', fold_num=1, val_size=.1, uid=
             val_set_list.append(val_ids)
 
     elif val_method == 'tsbr':
-        split_idx = int(np.ceil(len(train_set) * (1 - val_size)))
-        train_ids, val_ids = np.arange(split_idx), np.arange(split_idx, len(train_set))
+        if split_boundary == 'day':
+            train_ids, val_ids = _day_grouped_split(
+                train_set, val_size, tid)
+        else:
+            split_idx = int(np.ceil(len(train_set) * (1 - val_size)))
+            train_ids, val_ids = np.arange(split_idx), np.arange(split_idx, len(train_set))
 
         train_set_list.append(train_ids)
         val_set_list.append(val_ids)

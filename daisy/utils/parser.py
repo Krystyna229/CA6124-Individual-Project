@@ -1,5 +1,7 @@
 import argparse
-from json import loads, JSONDecodeError
+from json import dumps, loads, JSONDecodeError
+
+import yaml
 
 def parse_args():
     parser = argparse.ArgumentParser(description='arguments for daisy')
@@ -7,9 +9,18 @@ def parse_args():
     parser.add_argument('--optimization_metric', 
                         type=str, 
                         help='the metric to be optimized for hyper-parameter tuning via HyperOpt')
+    parser.add_argument('--optimization_k',
+                        type=int,
+                        help='optional cutoff used by the tuning objective')
     parser.add_argument('--hyperopt_trail', 
                         type=int, 
                         help='the number of trails of HyperOpt')
+    parser.add_argument('--study_storage',
+                        type=str,
+                        help='optional Optuna storage URL for resumable tuning')
+    parser.add_argument('--study_name',
+                        type=str,
+                        help='optional persistent Optuna study name')
     parser.add_argument('--tune_pack', 
                         type=str, 
                         help='record the searching space of hyper-parameters for HyperOpt')
@@ -44,6 +55,16 @@ def parse_args():
     parser.add_argument('--cand_num', 
                         type=int, 
                         help='the number of candidate items used for ranking')
+    parser.add_argument('--ranking_mode',
+                        type=str,
+                        help='ranking protocol: sampled (original) or full')
+    parser.add_argument('--warm_start',
+                        action='store_true',
+                        default=None,
+                        help='evaluate only users and items observed in training')
+    parser.add_argument('--split_boundary',
+                        type=str,
+                        help='timestamp boundary: interaction (original) or day')
     parser.add_argument('--sample_method', 
                         type=str, 
                         help='negative sampling method mixed with uniform, options: high-pop, low-pop')
@@ -118,6 +139,9 @@ def parse_args():
     parser.add_argument('--batch_size', 
                         type=int, 
                         help='batch size for training')
+    parser.add_argument('--loader_workers',
+                        type=int,
+                        help='number of DataLoader worker processes')
     parser.add_argument('--num_layers', 
                         type=int, 
                         help='number of layers in MLP model')
@@ -147,41 +171,17 @@ def json_format_corrector(json_string: str) -> str:
     # Check if the string is empty (or is None)
     if not json_string or json_string == '{}': return json_string
 
-    # Checks if json string is already in correct format
+    # Keep valid JSON unchanged.
     try:
         loads(json_string)
         return json_string
     except JSONDecodeError:
         pass
 
-    # Characters used for JSON syntax
-    json_syntax = ["{", "}", ",", ":", '""', " ", "."]
-
-    # Array used to store the string. Array used since mutable
-    modified_string = []
-
-    # Boolean if the previous character in the loop is for syntax, or non-content character (i.e., not alphanumeric)
-    prev_char_is_syntax = True
-
-    # Process char by char
-    for char in json_string:
-
-        # Check if character is for json syntax or is content. Ignore numeric values
-        cur_char_is_syntax = char in json_syntax or char.isnumeric()
-
-        # If the previous character is syntax and current is content or vice-versa, append a double-quote 
-        if cur_char_is_syntax != prev_char_is_syntax:
-            modified_string.append('"')
-            prev_char_is_syntax = cur_char_is_syntax
-
-        modified_string.append(char)
-
-    # Convert array to string
-    modified_string = "".join(modified_string)
-
-    # Convert remove double quote from "null"
-    modified_string = modified_string.replace('"null"', 'null')
-
-    return modified_string
-
-
+    # DaisyRec's command-line examples use YAML-style mappings with unquoted
+    # keys. Safe YAML parsing handles those mappings without corrupting keys
+    # such as ``reg_1`` (which the original character-level converter did).
+    parsed = yaml.safe_load(json_string)
+    if not isinstance(parsed, dict):
+        raise ValueError('tune_pack must be a JSON/YAML mapping')
+    return dumps(parsed)
