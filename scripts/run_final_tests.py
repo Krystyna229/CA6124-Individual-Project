@@ -38,6 +38,7 @@ def main() -> None:
                 "--warm_start",
                 "--ranking_mode", "full",
                 "--topk", "50",
+                "--save_user_metrics",
                 "--loader_workers", "0",
             ]
             for name, value in best_parameters(params_path).items():

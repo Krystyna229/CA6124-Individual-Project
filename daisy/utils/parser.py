@@ -142,6 +142,9 @@ def parse_args():
     parser.add_argument('--loader_workers',
                         type=int,
                         help='number of DataLoader worker processes')
+    parser.add_argument('--save_user_metrics',
+                        action='store_true',
+                        help='save opt-in per-user NDCG@10 for paired inference')
     parser.add_argument('--num_layers', 
                         type=int, 
                         help='number of layers in MLP model')

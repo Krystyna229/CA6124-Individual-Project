@@ -2,6 +2,7 @@
 """Create compact final-result tables and figures for the report."""
 
 import csv
+import shutil
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -15,6 +16,28 @@ DATASETS = ("ml-1m", "amazon-music")
 ALGORITHMS = ("ease", "multi-vae", "cdae")
 DISPLAY = {"ease": "EASE", "multi-vae": "Multi-VAE", "cdae": "CDAE"}
 METRICS = ("Recall", "NDCG")
+
+
+def archive_raw_outputs() -> None:
+    """Keep submission-ready copies of all auditable trial and KPI files."""
+    (OUT / "trials").mkdir(parents=True, exist_ok=True)
+    (OUT / "kpi").mkdir(parents=True, exist_ok=True)
+    (OUT / "user_metrics").mkdir(parents=True, exist_ok=True)
+    for dataset in DATASETS:
+        for algorithm in ALGORITHMS:
+            trial_name = (
+                f"trials_BPR_{algorithm}_{dataset}_10filter_tsbr_"
+                "day_warm_full_opt10.csv")
+            shutil.copy2(ROOT / "tune_res" / trial_name,
+                         OUT / "trials" / f"{dataset}_{algorithm}.csv")
+            kpi_name = (
+                f"BPR_{algorithm}_day_warm_full_with_0uniform_kpi_results.csv")
+            shutil.copy2(ROOT / "res" / dataset / "10filter" / "tsbr" / kpi_name,
+                         OUT / "kpi" / f"{dataset}_{algorithm}.csv")
+            user_name = (
+                f"BPR_{algorithm}_day_warm_full_with_0uniform_user_ndcg10.csv")
+            shutil.copy2(ROOT / "res" / dataset / "10filter" / "tsbr" / user_name,
+                         OUT / "user_metrics" / f"{dataset}_{algorithm}.csv")
 
 
 def read_metric(dataset: str, algorithm: str, metric: str, k: int = 10) -> float:
@@ -97,6 +120,7 @@ def best_parameter_table() -> None:
 
 def main() -> None:
     OUT.mkdir(exist_ok=True)
+    archive_raw_outputs()
     frame = final_table()
     frame.to_csv(OUT / "final_summary.csv", index=False)
     best_parameter_table()

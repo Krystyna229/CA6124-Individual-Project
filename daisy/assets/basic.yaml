@@ -23,6 +23,7 @@ cand_num: 1000
 ranking_mode: 'sampled'
 warm_start: False
 split_boundary: 'interaction'
+save_user_metrics: False
 sample_method: 'uniform'
 sample_ratio: 0
 num_ng: 4

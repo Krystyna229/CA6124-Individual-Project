@@ -19,13 +19,19 @@ the following reproducibility options are opt-in:
 - deterministic full-calendar-day temporal boundaries;
 - warm-start-only evaluation, with retained interactions/users reported;
 - full ranking over training-seen items, masking each user's training items;
-- configurable validation objective cutoff (NDCG@10 in this project).
+- configurable validation objective cutoff (NDCG@10 in this project);
+- optional per-user NDCG output for paired statistical inference.
 
 The experiment uses DaisyRec's one-pass `10filter`, an approximately 80/20
 global temporal split, the most recent 10% of the training portion for
 validation, and 20 Optuna trials for every model-dataset combination. Because
 the datasets differ simultaneously in domain, scale and sparsity, comparisons
 are descriptive rather than causal.
+
+CDAE and Multi-VAE use the same fixed 50-epoch training budget with early
+stopping disabled. Multi-VAE's KL schedule advances once per mini-batch and
+uses `total_anneal_steps=400`, so every searched annealing cap is reached
+within the actual training run.
 
 ### Data
 
@@ -55,6 +61,7 @@ python -m unittest tests/test_assignment_extensions.py
 TRIALS=20 scripts/run_tuning.sh
 python scripts/run_final_tests.py
 python scripts/summarize_results.py
+python scripts/paired_bootstrap.py
 python scripts/build_report.py
 ```
 
@@ -70,6 +77,7 @@ all six KPI files, summary tables and figures) and `report/` (DOCX and PDF).
 - `daisy/utils/evaluation.py`: opt-in warm-start and full-ranking utilities.
 - `scripts/diagnose_datasets.py`: dataset/filter/split diagnostics.
 - `scripts/run_tuning.sh` and `scripts/run_final_tests.py`: reproducible runs.
+- `scripts/paired_bootstrap.py`: seeded paired NDCG@10 confidence intervals.
 - `tests/test_assignment_extensions.py`: regression and extension tests.
 
 ## Overview

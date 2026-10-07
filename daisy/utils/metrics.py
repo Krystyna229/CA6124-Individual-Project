@@ -101,7 +101,7 @@ def Precision(test_ur, pred_ur, test_u):
         u = test_u[idx]
         gt = test_ur[u]
         pred = pred_ur[idx]
-        pre = np.in1d(pred, list(gt)).sum() / len(pred)
+        pre = np.isin(pred, list(gt)).sum() / len(pred)
 
         res.append(pre)
 
@@ -114,7 +114,7 @@ def Recall(test_ur, pred_ur, test_u):
         u = test_u[idx]
         gt = test_ur[u]
         pred = pred_ur[idx]
-        rec = np.in1d(pred, list(gt)).sum() / len(gt)
+        rec = np.isin(pred, list(gt)).sum() / len(gt)
 
         res.append(rec)
 
@@ -142,7 +142,7 @@ def MAP(test_ur, pred_ur, test_u):
         u = test_u[idx]
         gt = test_ur[u]
         pred = pred_ur[idx]
-        r = np.in1d(pred, list(gt))
+        r = np.isin(pred, list(gt))
         out = [r[:k+1].sum() / (k + 1) for k in range(r.size) if r[k]]
         if not out:
             res.append(0.)
@@ -153,7 +153,8 @@ def MAP(test_ur, pred_ur, test_u):
     return np.mean(res)
 
 
-def NDCG(test_ur, pred_ur, test_u):
+def NDCG_user_scores(test_ur, pred_ur, test_u):
+    """Return per-user NDCG values using DaisyRec's existing definition."""
     def DCG(r):
         # np.asfarray was removed in NumPy 2.0; this is equivalent and works
         # with both NumPy 1.x and 2.x.
@@ -169,7 +170,7 @@ def NDCG(test_ur, pred_ur, test_u):
         u = test_u[idx]
         gt = test_ur[u]
         pred = pred_ur[idx]
-        r = np.in1d(pred, list(gt))
+        r = np.isin(pred, list(gt))
 
         idcg = DCG(sorted(r, reverse=True))
         if not idcg:
@@ -179,7 +180,11 @@ def NDCG(test_ur, pred_ur, test_u):
 
         res.append(ndcg)
 
-    return np.mean(res)
+    return np.asarray(res, dtype=float)
+
+
+def NDCG(test_ur, pred_ur, test_u):
+    return np.mean(NDCG_user_scores(test_ur, pred_ur, test_u))
 
 
 def HR(test_ur, pred_ur, test_u):
@@ -189,7 +194,7 @@ def HR(test_ur, pred_ur, test_u):
         gt = test_ur[u]
         pred = pred_ur[idx]
 
-        r = np.in1d(pred, list(gt))
+        r = np.isin(pred, list(gt))
         res.append(1 if r.sum() else 0)
 
     return np.mean(res)
@@ -203,7 +208,7 @@ def AUC(test_ur, pred_ur, test_u):
         gt = test_ur[u]
         pred = pred_ur[idx]
 
-        r = np.in1d(pred, list(gt))
+        r = np.isin(pred, list(gt))
         pos_num = r.sum()
         neg_num = len(pred) - pos_num
 
@@ -226,7 +231,7 @@ def F1(test_ur, pred_ur, test_u):
         gt = test_ur[u]
         pred = pred_ur[idx]
 
-        r = np.in1d(pred, list(gt))
+        r = np.isin(pred, list(gt))
         pre = r.sum() / len(pred)
         rec = r.sum() / len(gt)
 

@@ -1,7 +1,7 @@
 dataset,model,reg,ndcg,latent_dim,dropout,batch_size,lr,anneal_cap,reg_1,reg_2
 ml-1m,EASE,10.0,0.3210,,,,,,,
-ml-1m,Multi-VAE,,0.3596,32,0.0,256,0.0001,0.05,,
+ml-1m,Multi-VAE,,0.3492,256,0.7,512,0.0001,0.1,,
 ml-1m,CDAE,,0.3638,64,0.3,256,0.0001,,0.0,0.0
 amazon-music,EASE,50.0,0.0358,,,,,,,
-amazon-music,Multi-VAE,,0.0457,256,0.0,128,0.001,0.1,,
+amazon-music,Multi-VAE,,0.0449,512,0.2,512,0.001,0.5,,
 amazon-music,CDAE,,0.0524,256,0.1,256,0.005,,0.0,0.1

@@ -1,8 +1,9 @@
 import time
 from logging import getLogger
+import pandas as pd
 from daisy.model.Models import RecommenderModel
 from daisy.utils.splitter import TestSplitter
-from daisy.utils.metrics import calc_ranking_results
+from daisy.utils.metrics import calc_ranking_results, NDCG_user_scores
 from daisy.utils.loader import RawDataReader, Preprocessor
 from daisy.utils.config import init_seed, init_config, init_logger
 from daisy.utils.sampler import BasicNegtiveSampler, SkipGramNegativeSampler
@@ -125,3 +126,12 @@ if __name__ == '__main__':
 
     results = calc_ranking_results(test_ur, preds, test_u, config)
     results.to_csv(f'{result_save_path}{algo_prefix}_{common_prefix}_kpi_results.csv', index=False)
+    if config.get('save_user_metrics', False):
+        k = min(10, preds.shape[1])
+        scores = NDCG_user_scores(test_ur, preds[:, :k], test_u)
+        pd.DataFrame({
+            config['UID_NAME']: test_u,
+            f'ndcg@{k}': scores,
+        }).to_csv(
+            f'{result_save_path}{algo_prefix}_{common_prefix}_user_ndcg{k}.csv',
+            index=False)

@@ -6,6 +6,7 @@ import pandas as pd
 import scipy.sparse as sp
 
 from daisy.utils.evaluation import filter_warm_start, full_rank_predictions
+from daisy.utils.metrics import NDCG, NDCG_user_scores
 from daisy.utils.parser import json_format_corrector
 from daisy.utils.splitter import split_test, split_validation
 
@@ -18,6 +19,13 @@ except ModuleNotFoundError:
 
 
 class AssignmentExtensionTests(unittest.TestCase):
+    def test_ndcg_is_compatible_with_numpy_2(self):
+        score = NDCG({0: {2}}, np.array([[2, 1]]), [0])
+        self.assertEqual(score, 1.0)
+        np.testing.assert_array_equal(
+            NDCG_user_scores({0: {2}}, np.array([[2, 1]]), [0]),
+            np.array([1.0]))
+
     def test_tune_pack_parser_preserves_underscored_keys(self):
         import json
 
